@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="MICE-Bench: multi-reference image creation and editing benchmark.">
+  <title>MICE-Bench</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="hero">
+    <nav><a href="#overview">Overview</a><a href="#data">Data</a><a href="#results">Results</a><a href="#citation">Citation</a></nav>
+    <div class="eyebrow">ICML 2026</div>
+    <h1>MICE-Bench</h1>
+    <p class="subtitle">A Challenging and Comprehensive Benchmark for<br>Multi-Reference Image Creation and Editing</p>
+    <p class="authors">Siqi Luo<sup>*</sup>, Huayu Zheng<sup>*</sup>, Jianghan Shen, Yi Xin, Luxin Xu, Jiyao Liu, Xinyu Zhang, Hang Zhou, Pengyu Xie, Xiaohui Li, Shuo Cao, Yuandong Pu, Junjun He, Bin Fu, Yihao Liu, Yu Qiao, Guangtao Zhai, Yuewen Cao<sup>†</sup>, Xiaohong Liu<sup>†</sup></p>
+    <p class="affiliations">Shanghai Jiao Tong University · Shanghai AI Laboratory · Nanjing University · SII · UESTC · Fudan University · USTC · SIAT</p>
+    <div class="buttons">
+      <a class="button" href="paper.pdf">Paper</a>
+      <a class="button" href="https://github.com/MICE-Bench/MICE-Bench">Code</a>
+      <a class="button" href="https://huggingface.co/datasets/MICE-Bench/MICE-Bench">Dataset</a>
+    </div>
+    <img class="hero-figure" src="assets/MICE-teaser.png" alt="MICE-Bench task and metric overview">
+  </header>
+
+  <main>
+    <section id="overview">
+      <h2>One benchmark, two complementary capabilities</h2>
+      <p class="lead">MICE-Bench stress-tests whether generative models can bind multiple visual references to distinct semantic roles, compose them coherently, and preserve what should remain unchanged.</p>
+      <div class="stats">
+        <article><strong>3,119</strong><span>high-quality cases</span></article>
+        <article><strong>7</strong><span>visual concept dimensions</span></article>
+        <article><strong>2–7</strong><span>concept constraints</span></article>
+        <article><strong>8</strong><span>evaluation dimensions</span></article>
+      </div>
+      <div class="concepts"><span>Identity</span><span>Object</span><span>Style</span><span>Scene</span><span>Material</span><span>Control</span><span>Appearance</span></div>
+    </section>
+
+    <section class="tinted">
+      <h2>Concept-centric construction with expert verification</h2>
+      <p class="lead">A four-stage pipeline curates licensed visual concepts, isolates concept-specific descriptions, plans feasible compositions, and validates every case through professional review.</p>
+      <img class="wide-figure framed" src="assets/data_pipeline.png" alt="Four-stage MICE-Bench data construction pipeline">
+    </section>
+
+    <section id="data">
+      <h2>Creation and editing</h2>
+      <div class="grid">
+        <article class="card"><img src="assets/create_data.png" alt="Creation benchmark examples"><div><h3>Multi-reference creation</h3><p>1,872 cases spanning all 120 combinations of the seven concept dimensions, from two-reference composition to seven-concept stress tests.</p></div></article>
+        <article class="card"><img src="assets/edit_data.png" alt="Editing benchmark examples"><div><h3>Multi-reference editing</h3><p>1,247 cases across 22 atomic subtasks: Add, Replace, Move, Remove, Style, Background, Controllable, and Hybrid editing.</p></div></article>
+      </div>
+    </section>
+
+    <section id="results">
+      <h2>More concepts reveal a persistent capability gap</h2>
+      <p class="lead">Across 13 representative systems, concept consistency and physical realism decline as constraint density increases. Closed-source systems lead overall, while the strongest open models narrow the gap in visual quality.</p>
+      <img class="wide-figure" src="assets/performance_3metrics.png" alt="Performance degradation as the number of concepts increases">
+      <img class="wide-figure" src="assets/open_closed.png" alt="Comparison of open-source and closed-source models">
+      <img class="wide-figure compact" src="assets/model_ev.jpg" alt="Performance across model generations">
+      <h3 class="gallery-title">Qualitative comparisons</h3>
+      <div class="result-gallery">
+        <figure><img src="assets/create_results.png" alt="Qualitative creation comparison"><figcaption>Multi-reference creation</figcaption></figure>
+        <figure><img src="assets/edit_results.png" alt="Qualitative editing comparison"><figcaption>Multi-reference editing</figcaption></figure>
+      </div>
+    </section>
+
+    <section id="citation" class="tinted">
+      <h2>Citation</h2>
+      <pre><code>@inproceedings{luo2026micebench,
+  title     = {MICE-Bench: A Challenging and Comprehensive Benchmark for
+               Multi-Reference Image Creation and Editing},
+  author    = {Luo, Siqi and Zheng, Huayu and others},
+  booktitle = {International Conference on Machine Learning},
+  year      = {2026}
+}</code></pre>
+    </section>
+  </main>
+  <footer>MICE-Bench · Research use · <a href="https://github.com/MICE-Bench/MICE-Bench">GitHub</a></footer>
+</body>
+</html>

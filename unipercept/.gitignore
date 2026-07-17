@@ -1,0 +1,22 @@
+# Checkpoints and large files
+benchmark/VQA/
+benchmark/VR/
+benchmark/VR/IAA/AVA/image/
+benchmark/VR/IAA/FLICKR-AES/image/
+benchmark/VR/IAA/PARA/image/
+benchmark/VR/IAA/TAD66K/image/
+benchmark/VR/IQA/KADID/image/
+benchmark/VR/IQA/KonIQ-10K/image/
+benchmark/VR/IQA/PIPAL/image/
+benchmark/VR/IQA/SPAQ/image/
+benchmark/VR/ISTA/ISTA-10K/image/
+ckpt/unipercept
+results/
+src/open-r1-multimodal/
+*.ckpt
+*.pth
+
+# others
+**/__pycache__/
+*.py[cod]
+results/

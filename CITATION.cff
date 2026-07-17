@@ -1,0 +1,16 @@
+cff-version: 1.2.0
+message: "If you use MICE-Bench, please cite our paper."
+title: "MICE-Bench: A Challenging and Comprehensive Benchmark for Multi-Reference Image Creation and Editing"
+type: article
+authors:
+  - family-names: Luo
+    given-names: Siqi
+  - family-names: Zheng
+    given-names: Huayu
+  - family-names: Cao
+    given-names: Yuewen
+  - family-names: Liu
+    given-names: Xiaohong
+year: 2026
+license: MIT
+

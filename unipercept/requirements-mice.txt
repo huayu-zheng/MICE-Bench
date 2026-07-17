@@ -1,0 +1,14 @@
+# Minimal runtime dependencies for MICE-Bench creation Q3.
+# Install PyTorch separately when your CUDA platform needs a different wheel.
+torch==2.8.0
+torchvision==0.23.0
+transformers==4.49.0
+accelerate>=1.10.1
+peft==0.17.1
+timm
+einops
+Pillow
+numpy
+sentencepiece
+safetensors
+
