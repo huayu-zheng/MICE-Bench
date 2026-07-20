@@ -82,7 +82,7 @@ def call_vlm_for_evaluation(
     
     
     if include_explanation:
-        prompt = f"""You are evaluating concept preservation in an image creation task.
+        prompt = f"""You are evaluating concept preservation in an image editing task.
 
 You will see two images:
 1. Reference Image (left): The source of the visual concept
@@ -102,7 +102,7 @@ Format your response as:
 Explanation: [your explanation]
 Answer: [yes or no]"""
     else:
-        prompt = f"""You are evaluating concept preservation in an image creation task.
+        prompt = f"""You are evaluating concept preservation in an image editing task.
 
 You will see two images:
 1. Reference Image (left): The source of the visual concept
