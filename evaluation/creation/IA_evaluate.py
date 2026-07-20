@@ -7,7 +7,7 @@ from typing import Dict, Any, List
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_INPUT_FILE = PROJECT_ROOT / "data" / "create.json"
-DEFAULT_OUTPUT_DIR = Path(__file__).resolve().parent / "evaluation_results" / "Q3"
+DEFAULT_OUTPUT_DIR = Path(__file__).resolve().parent / "evaluation_results" / "IA"
 DEFAULT_UNIPERCEPT_ROOT = PROJECT_ROOT / "unipercept"
 DEFAULT_MODEL_PATH = DEFAULT_UNIPERCEPT_ROOT / "ckpt" / "UniPercept"
 
@@ -119,7 +119,7 @@ class LocalUniPerceptInferencer:
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Compute UniPercept rewards for result images in metadata JSON."
+        description="Compute image aesthetics/quality/structure (IA/IQ/IS) with UniPercept."
     )
     parser.add_argument(
         "--input",

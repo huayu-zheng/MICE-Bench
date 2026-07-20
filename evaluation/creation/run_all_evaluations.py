@@ -1,4 +1,5 @@
 import argparse
+import json
 import os
 import subprocess
 import sys
@@ -15,6 +16,30 @@ DEFAULT_UNIPERCEPT_ROOT = PROJECT_ROOT / "unipercept"
 DEFAULT_UNIPERCEPT_MODEL_PATH = DEFAULT_UNIPERCEPT_ROOT / "ckpt" / "UniPercept"
 
 
+def validate_creation_schema(input_file: Path) -> None:
+    """Validate the flattened PF_prompt/CC_prompt creation metadata contract."""
+    try:
+        records = json.loads(input_file.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise ValueError(f"unable to read creation metadata: {error}") from error
+    if not isinstance(records, list):
+        raise ValueError("creation metadata must be a top-level JSON list")
+    invalid_pf = [
+        item.get("case_id", f"index_{index}")
+        for index, item in enumerate(records)
+        if not isinstance(item, dict) or not isinstance(item.get("PF_prompt"), str)
+    ]
+    invalid_cc = [
+        item.get("case_id", f"index_{index}")
+        for index, item in enumerate(records)
+        if not isinstance(item, dict) or not isinstance(item.get("CC_prompt"), dict)
+    ]
+    if invalid_pf:
+        raise ValueError(f"missing or invalid PF_prompt: {invalid_pf[:10]}")
+    if invalid_cc:
+        raise ValueError(f"missing or invalid CC_prompt: {invalid_cc[:10]}")
+
+
 def run_command(
     name: str, command: List[str], environment: dict[str, str], dry_run: bool
 ) -> None:
@@ -29,7 +54,7 @@ def run_command(
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Run Q1, Q2, Q3, and Q4 evaluations in one command."
+        description="Run PF, CC, IA, and PR creation evaluations in one command."
     )
     parser.add_argument("--input", type=Path, default=DEFAULT_INPUT_FILE)
     parser.add_argument("--dataset-root", type=Path, default=DEFAULT_DATASET_ROOT)
@@ -48,24 +73,28 @@ def main() -> int:
     )
     parser.add_argument("--no-flash-attn", action="store_true")
     parser.add_argument("--device", default="cuda")
-    parser.add_argument("--skip-q1", action="store_true")
-    parser.add_argument("--skip-q2", action="store_true")
-    parser.add_argument("--skip-q3", action="store_true")
-    parser.add_argument("--skip-q4", action="store_true")
+    parser.add_argument("--skip-pf", action="store_true")
+    parser.add_argument("--skip-cc", action="store_true")
+    parser.add_argument("--skip-ia", action="store_true")
+    parser.add_argument("--skip-pr", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
     if not args.input.is_file():
         parser.error(f"input JSON not found: {args.input}")
+    try:
+        validate_creation_schema(args.input)
+    except ValueError as error:
+        parser.error(str(error))
     if not args.dataset_root.is_dir():
         parser.error(f"dataset root not found: {args.dataset_root}")
-    if not args.skip_q3 and not args.unipercept_root.is_dir():
+    if not args.skip_ia and not args.unipercept_root.is_dir():
         parser.error(f"UniPercept source not found: {args.unipercept_root}")
-    if not args.dry_run and not args.skip_q3 and not args.unipercept_model_path.exists():
+    if not args.dry_run and not args.skip_ia and not args.unipercept_model_path.exists():
         parser.error(f"UniPercept model path not found: {args.unipercept_model_path}")
     if (
         not args.dry_run
-        and not (args.skip_q1 and args.skip_q2 and args.skip_q4)
+        and not (args.skip_pf and args.skip_cc and args.skip_pr)
         and not args.api_key
     ):
         parser.error("provide --api-key or set OPENAI_API_KEY")
@@ -81,19 +110,19 @@ def main() -> int:
     environment["OPENAI_BASE_URL"] = args.base_url
 
     commands = []
-    if not args.skip_q1:
+    if not args.skip_pf:
         commands.append(
             (
-                "Q1 prompt-image alignment",
+                "PF prompt following (PF_prompt)",
                 [
                     python,
-                    str(SCRIPT_DIR / "Q1_evaluate.py"),
+                    str(SCRIPT_DIR / "PF_evaluate.py"),
                     "--input",
                     str(args.input),
                     "--dataset-root",
                     str(args.dataset_root),
                     "--output-dir",
-                    str(args.output_root / "Q1"),
+                    str(args.output_root / "PF"),
                     "--model",
                     args.vlm_model,
                     "--workers",
@@ -101,19 +130,19 @@ def main() -> int:
                 ],
             )
         )
-    if not args.skip_q2:
+    if not args.skip_cc:
         commands.append(
             (
-                "Q2 concept preservation",
+                "CC concept consistency (CC_prompt)",
                 [
                     python,
-                    str(SCRIPT_DIR / "Q2_evaluate.py"),
+                    str(SCRIPT_DIR / "CC_evaluate.py"),
                     "--metadata-file",
                     str(args.input),
                     "--dataset-root",
                     str(args.dataset_root),
                     "--output-dir",
-                    str(args.output_root / "Q2"),
+                    str(args.output_root / "CC"),
                     "--vlm-model",
                     args.vlm_model,
                     "--num-workers",
@@ -123,19 +152,19 @@ def main() -> int:
                 ],
             )
         )
-    if not args.skip_q3:
+    if not args.skip_ia:
         commands.append(
             (
-                "Q3 UniPercept rewards",
+                "IA UniPercept aesthetics/quality/structure",
                 [
                     python,
-                    str(SCRIPT_DIR / "Q3_evaluate.py"),
+                    str(SCRIPT_DIR / "IA_evaluate.py"),
                     "--input",
                     str(args.input),
                     "--dataset-root",
                     str(args.dataset_root),
                     "--output-dir",
-                    str(args.output_root / "Q3"),
+                    str(args.output_root / "IA"),
                     "--unipercept-root",
                     str(args.unipercept_root),
                     "--model-path",
@@ -147,19 +176,19 @@ def main() -> int:
         )
         if args.no_flash_attn:
             commands[-1][1].append("--no-flash-attn")
-    if not args.skip_q4:
+    if not args.skip_pr:
         commands.append(
             (
-                "Q4 physical realism",
+                "PR physical realism",
                 [
                     python,
-                    str(SCRIPT_DIR / "Q4_evaluate.py"),
+                    str(SCRIPT_DIR / "PR_evaluate.py"),
                     "--input",
                     str(args.input),
                     "--dataset-root",
                     str(args.dataset_root),
                     "--output-dir",
-                    str(args.output_root / "Q4"),
+                    str(args.output_root / "PR"),
                     "--model",
                     args.vlm_model,
                     "--workers",
@@ -169,7 +198,7 @@ def main() -> int:
         )
 
     if not commands:
-        parser.error("all evaluations are skipped")
+        parser.error("all creation evaluations are skipped")
 
     try:
         for name, command in commands:

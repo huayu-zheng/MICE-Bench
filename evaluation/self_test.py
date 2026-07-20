@@ -18,12 +18,12 @@ from PIL import Image
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from evaluation.creation import Q1_evaluate as create_q1
-from evaluation.creation import Q2_evaluate as create_q2
-from evaluation.creation import Q4_evaluate as create_q4
-from evaluation.editing import Q1_evaluate as edit_q1
-from evaluation.editing import Q3_evaluate as edit_q3
-from evaluation.editing import Q4_evaluate as edit_q4
+from evaluation.creation import PF_evaluate as create_pf
+from evaluation.creation import CC_evaluate as create_cc
+from evaluation.creation import PR_evaluate as create_pr
+from evaluation.editing import IF_evaluate as edit_if
+from evaluation.editing import NERC_evaluate as edit_nerc
+from evaluation.editing import PR_evaluate as edit_pr
 
 def write_json(path: Path, value: object) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -35,7 +35,7 @@ def read_csv_row(path: Path) -> dict[str, str]:
         return next(csv.DictReader(file))
 
 
-class FakeQ1Scorer:
+class FakePromptFollowingScorer:
     def __init__(self, result_type: type, score: int = 82):
         self.result_type = result_type
         self.score = score
@@ -44,12 +44,12 @@ class FakeQ1Scorer:
         return self.result_type(description, "simulated", self.score, image_path, "fake")
 
 
-class FakeQ4Scorer:
+class FakePhysicalRealismScorer:
     def evaluate_background_physical_realism(self, image_path: str):
         return {"score": 76, "reasoning": "simulated"}
 
 
-class FakeEditQ3Scorer:
+class FakeNERCScorer:
     def evaluate(self, **_: object):
         return {"preservation_score": 88, "reasoning": "simulated"}
 
@@ -78,52 +78,52 @@ def test_evaluator_contracts(root: Path) -> None:
 
     create_record = {
         "case_id": "create_case",
-        "caption_result": {"converted_prompt": "a simulated image"},
+        "PF_prompt": "a simulated image",
         "sources": [{"path": str(image)}],
-        "verification_questions": {"image1": "Does it match?"},
+        "CC_prompt": {"image1": "Does it match?"},
         "result": {"fake_model": str(image)},
     }
     edit_record = {
         "case_id": "edit_case",
-        "caption_result": {"converted_prompt": "an edited simulated image"},
+        "IF_prompt": "an edited simulated image",
         "prompts": {"en": "Edit the image."},
         "sources": [{"path": str(image)}, {"path": str(image)}],
-        "verification_questions": {"image1": "Does it match?"},
+        "CC_prompt": {"image1": "Does it match?"},
         "result": {"fake_model": str(image)},
     }
 
-    result = create_q1.process_single_record(
-        dict(create_record), FakeQ1Scorer(create_q1.MatchScoreResult), "fake_model", root
+    result = create_pf.process_single_record(
+        dict(create_record), FakePromptFollowingScorer(create_pf.MatchScoreResult), "fake_model", root
     )
     assert result["evaluations"]["fake_model"]["score"] == 82
 
-    result = edit_q1.process_single_record(
-        dict(edit_record), FakeQ1Scorer(edit_q1.MatchScoreResult), "fake_model", root
+    result = edit_if.process_single_record(
+        dict(edit_record), FakePromptFollowingScorer(edit_if.MatchScoreResult), "fake_model", root
     )
     assert result["evaluations"]["fake_model"]["score"] == 82
 
-    result = create_q4.process_single_record(
-        dict(create_record), FakeQ4Scorer(), "fake_model", root
+    result = create_pr.process_single_record(
+        dict(create_record), FakePhysicalRealismScorer(), "fake_model", root
     )
     assert result["evaluations"]["fake_model"]["score"] == 76
 
-    result = edit_q4.process_single_record(
-        dict(edit_record), FakeQ4Scorer(), "fake_model", root
+    result = edit_pr.process_single_record(
+        dict(edit_record), FakePhysicalRealismScorer(), "fake_model", root
     )
     assert result["evaluations"]["fake_model"]["score"] == 76
 
-    result = edit_q3.process_single_record(
-        dict(edit_record), FakeEditQ3Scorer(), "fake_model", root
+    result = edit_nerc.process_single_record(
+        dict(edit_record), FakeNERCScorer(), "fake_model", root
     )
     assert result["evaluations"]["fake_model"]["preservation_score"] == 88
 
     install_fake_openai()
-    q2_result = create_q2.process_task(
+    cc_result = create_cc.process_task(
         (
             "create_case",
             "fake_model",
             str(image),
-            create_record["verification_questions"],
+            create_record["CC_prompt"],
             {"image1": str(image)},
             "fake-key",
             "https://example.invalid/v1",
@@ -133,8 +133,8 @@ def test_evaluator_contracts(root: Path) -> None:
             True,
         )
     )
-    assert q2_result is not None
-    assert q2_result["evaluations"]["question_1"]["answer"] == "yes"
+    assert cc_result is not None
+    assert cc_result["evaluations"]["question_1"]["answer"] == "yes"
 
 
 def test_creation_aggregation(root: Path) -> None:
@@ -153,28 +153,28 @@ def test_creation_aggregation(root: Path) -> None:
     evaluation_root = root / "create_eval"
     csv_dir = root / "create_csv"
     write_json(
-        evaluation_root / "Q1" / "processed_metadata_with_verifications.match_fake_model.json",
+        evaluation_root / "PF" / "processed_metadata_with_verifications.match_fake_model.json",
         [
             {"case_id": "c1", "evaluations": {"fake_model": {"score": 80}}},
             {"case_id": "c2", "evaluations": {"fake_model": {"score": 60}}},
         ],
     )
     write_json(
-        evaluation_root / "Q2" / "fake_model_evaluated.json",
+        evaluation_root / "CC" / "fake_model_evaluated.json",
         [
             {"case_id": "c1", "evaluations": {"question_1": {"answer": "yes"}}},
             {"case_id": "c2", "evaluations": {"question_1": {"answer": "no"}}},
         ],
     )
     write_json(
-        evaluation_root / "Q3" / "fake_model.json",
+        evaluation_root / "IA" / "fake_model.json",
         [
             {"case_id": "c1", "iaa": 60, "iqa": 70, "ista": 40},
             {"case_id": "c2", "iaa": 80, "iqa": 90, "ista": 60},
         ],
     )
     write_json(
-        evaluation_root / "Q4" / "processed_metadata_with_verifications.match_fake_model.json",
+        evaluation_root / "PR" / "processed_metadata_with_verifications.match_fake_model.json",
         [
             {"case_id": "c1", "evaluations": {"fake_model": {"score": 90}}},
             {"case_id": "c2", "evaluations": {"fake_model": {"score": 70}}},
@@ -212,28 +212,28 @@ def test_editing_aggregation(root: Path) -> None:
     evaluation_root = root / "edit_eval"
     csv_dir = root / "edit_csv"
     write_json(
-        evaluation_root / "Q1" / "processed_metadata_with_verifications.match_fake_model.json",
+        evaluation_root / "IF" / "processed_metadata_with_verifications.match_fake_model.json",
         [
             {"case_id": "e1", "evaluations": {"fake_model": {"score": 80}}},
             {"case_id": "e2", "evaluations": {"fake_model": {"score": 60}}},
         ],
     )
     write_json(
-        evaluation_root / "Q2" / "fake_model_evaluated.json",
+        evaluation_root / "CC" / "fake_model_evaluated.json",
         [
             {"case_id": "e1", "evaluations": {"question_1": {"answer": "yes"}}},
             {"case_id": "e2", "evaluations": {"question_1": {"answer": "no"}}},
         ],
     )
     write_json(
-        evaluation_root / "Q3" / "processed_metadata_with_verifications.Q3_fake_model.json",
+        evaluation_root / "NERC" / "processed_metadata_with_verifications.NERC_fake_model.json",
         [
             {"case_id": "e1", "evaluations": {"fake_model": {"preservation_score": 90}}},
             {"case_id": "e2", "evaluations": {"fake_model": {"preservation_score": 70}}},
         ],
     )
     write_json(
-        evaluation_root / "Q4" / "processed_metadata_with_verifications.match_fake_model.json",
+        evaluation_root / "PR" / "processed_metadata_with_verifications.match_fake_model.json",
         [
             {"case_id": "e1", "evaluations": {"fake_model": {"score": 60}}},
             {"case_id": "e2", "evaluations": {"fake_model": {"score": 40}}},

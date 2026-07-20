@@ -1,4 +1,4 @@
-# Minimal runtime dependencies for MICE-Bench creation Q3.
+# Minimal runtime dependencies for MICE-Bench creation IA.
 # Install PyTorch separately when your CUDA platform needs a different wheel.
 torch==2.8.0
 torchvision==0.23.0
@@ -11,4 +11,3 @@ Pillow
 numpy
 sentencepiece
 safetensors
-

@@ -43,9 +43,9 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-Creation Q3 uses the UniPercept source included in [`unipercept/`](unipercept). It runs locally and does not call an external scoring API. UniPercept has a separate GPU environment and checkpoint setup described below.
+Creation IA uses the UniPercept source included in [`unipercept/`](unipercept). It runs locally and does not call an external scoring API. UniPercept has a separate GPU environment and checkpoint setup described below.
 
-### Deploy UniPercept for creation Q3
+### Deploy UniPercept for creation IA
 
 UniPercept is recommended on Linux with an NVIDIA CUDA GPU. Create a separate Python 3.10 environment so its pinned PyTorch/Transformers versions do not conflict with other model environments:
 
@@ -56,9 +56,9 @@ cd MICE-Bench
 pip install -r unipercept/requirements-mice.txt
 ```
 
-This smaller requirements file contains only the Q3 inference dependencies. The upstream [`unipercept/requirements.txt`](unipercept/requirements.txt) additionally includes training and benchmark packages and is not required for MICE-Bench evaluation. If the pinned PyTorch wheel does not match your CUDA installation, install the appropriate PyTorch 2.8 build first and then install the remaining packages.
+This smaller requirements file contains only the creation IA inference dependencies. The upstream [`unipercept/requirements.txt`](unipercept/requirements.txt) additionally includes training and benchmark packages and is not required for MICE-Bench evaluation. If the pinned PyTorch wheel does not match your CUDA installation, install the appropriate PyTorch 2.8 build first and then install the remaining packages.
 
-`flash-attn>=2.8.3` is optional and speeds up inference, but it requires a compatible CUDA toolkit and compiler. Install it separately when supported; otherwise run Q3 with `--no-flash-attn`.
+`flash-attn>=2.8.3` is optional and speeds up inference, but it requires a compatible CUDA toolkit and compiler. Install it separately when supported; otherwise run IA with `--no-flash-attn`.
 
 Download the official checkpoint into the default location:
 
@@ -74,16 +74,16 @@ python unipercept/test_mice.py
 # Add --no-flash-attn if FlashAttention is unavailable.
 ```
 
-Then test Q3 on model-output metadata with:
+Then test IA on model-output metadata with:
 
 ```bash
 conda activate mice-unipercept
-python evaluation/creation/Q3_evaluate.py \
+python evaluation/creation/IA_evaluate.py \
   --input outputs/my_model/create.json \
   --dataset-root data/create
 ```
 
-Q3 directly imports `unipercept/src/internvl`, loads the checkpoint once, and scores every output on three 0–100 dimensions: image aesthetics (`iaa`), image quality (`iqa`), and image structure/texture (`ista`). Results are saved per generated model and support automatic resume.
+IA directly imports `unipercept/src/internvl`, loads the checkpoint once, and scores every output on three 0–100 dimensions: image aesthetics (`iaa`), image quality (`iqa`), and image structure/texture (`ista`). Results are saved per generated model and support automatic resume.
 
 ## Download the dataset
 
@@ -129,14 +129,14 @@ export OPENAI_API_KEY=your_key
 export OPENAI_BASE_URL=https://api.openai.com/v1
 ```
 
-Run creation evaluation (omit UniPercept with `--skip-q3`):
+Run creation evaluation (omit UniPercept with `--skip-ia`):
 
 ```bash
 python evaluation/creation/run_all_evaluations.py \
   --input outputs/my_model/create.json
 ```
 
-The default checkpoint is `unipercept/ckpt/UniPercept`. Use `--unipercept-model-path /another/checkpoint` to override it, `--no-flash-attn` when FlashAttention is unavailable, or `--skip-q3` to run only the API-based metrics in another environment.
+The default checkpoint is `unipercept/ckpt/UniPercept`. Use `--unipercept-model-path /another/checkpoint` to override it, `--no-flash-attn` when FlashAttention is unavailable, or `--skip-ia` to run only PF/CC/PR in another environment.
 
 Run editing evaluation:
 
@@ -149,7 +149,7 @@ python scripts/prepare_submission.py \
 python evaluation/editing/run_all_evaluations.py --input outputs/my_model/edit.json
 ```
 
-Both runners are resumable, expose `--workers`, `--vlm-model`, and `--base-url`, and support `--skip-q1` through `--skip-q4`. Use `--dry-run` to inspect all commands. Metric details and aggregation commands are in [evaluation/README.md](evaluation/README.md).
+Both runners are resumable and expose `--workers`, `--vlm-model`, and `--base-url`. The creation runner supports `--skip-pf`, `--skip-cc`, `--skip-ia`, and `--skip-pr`; the editing runner supports `--skip-if`, `--skip-cc`, `--skip-nerc`, and `--skip-pr`. Use `--dry-run` to inspect all commands. Metric details and aggregation commands are in [evaluation/README.md](evaluation/README.md).
 
 ## Repository structure
 

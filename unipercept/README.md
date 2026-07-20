@@ -1,6 +1,6 @@
 # UniPercept runtime for MICE-Bench
 
-This directory contains the UniPercept inference source used by creation Q3.
+This directory contains the UniPercept inference source used by creation IA.
 The upstream project is available at
 [thunderbolt215/UniPercept](https://github.com/thunderbolt215/UniPercept), and
 the official checkpoint is hosted at
@@ -28,6 +28,5 @@ FlashAttention is optional. Test the deployment with a repository image:
 python unipercept/test_mice.py --no-flash-attn
 ```
 
-See the [main README](../README.md#deploy-unipercept-for-creation-q3) for the
-complete MICE-Bench Q3 workflow.
-
+See the [main README](../README.md#deploy-unipercept-for-creation-ia) for the
+complete MICE-Bench IA workflow.

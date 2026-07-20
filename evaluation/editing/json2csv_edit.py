@@ -11,10 +11,10 @@ DEFAULT_EVALUATION_ROOT = Path(__file__).resolve().parent / "evaluation_results"
 DEFAULT_CSV_DIR = Path(__file__).resolve().parent / "benchmark_results"
 
 SCORE_COLUMNS = {
-    "q1": "IF",
-    "q2": "CC",
-    "q3": "NERC",
-    "q4": "PR",
+    "if": "IF",
+    "cc": "CC",
+    "nerc": "NERC",
+    "pr": "PR",
 }
 
 
@@ -84,7 +84,7 @@ def model_evaluation(record: Dict[str, Any], model_name: str) -> Dict[str, Any]:
     return evaluation if isinstance(evaluation, dict) else {}
 
 
-def q1_scores(
+def if_scores(
     records: List[Dict[str, Any]],
     model_name: str,
     metadata: Dict[str, Dict[str, Any]],
@@ -97,7 +97,7 @@ def q1_scores(
     return average_by_key(values)
 
 
-def q2_scores(
+def cc_scores(
     records: List[Dict[str, Any]], metadata: Dict[str, Dict[str, Any]]
 ) -> Dict[Tuple[str, str], float]:
     values = []
@@ -117,7 +117,7 @@ def q2_scores(
     return average_by_key(values)
 
 
-def q3_scores(
+def nerc_scores(
     records: List[Dict[str, Any]],
     model_name: str,
     metadata: Dict[str, Dict[str, Any]],
@@ -133,21 +133,21 @@ def q3_scores(
     return average_by_key(values)
 
 
-def q4_scores(
+def pr_scores(
     records: List[Dict[str, Any]],
     model_name: str,
     metadata: Dict[str, Dict[str, Any]],
 ) -> Dict[Tuple[str, str], float]:
-    return q1_scores(records, model_name, metadata)
+    return if_scores(records, model_name, metadata)
 
 
 def evaluation_path(root: Path, score_name: str, model_name: str) -> Path:
-    if score_name == "q1":
+    if score_name == "if":
         filename = f"processed_metadata_with_verifications.match_{model_name}.json"
-    elif score_name == "q2":
+    elif score_name == "cc":
         filename = f"{model_name}_evaluated.json"
-    elif score_name == "q3":
-        filename = f"processed_metadata_with_verifications.Q3_{model_name}.json"
+    elif score_name == "nerc":
+        filename = f"processed_metadata_with_verifications.NERC_{model_name}.json"
     else:
         filename = f"processed_metadata_with_verifications.match_{model_name}.json"
     return root / score_name.upper() / filename
@@ -187,7 +187,7 @@ def apply_score(
     for row in rows:
         task_type = str(row.get("Task Type") or "").strip()
         task_subtype = str(row.get("Sub-task") or "").strip()
-        key = (task_type, "") if score_name == "q3" else (task_type, task_subtype)
+        key = (task_type, "") if score_name == "nerc" else (task_type, task_subtype)
         score = averages.get(key)
         if score is not None:
             row[column] = f"{score:.2f}"
@@ -195,7 +195,7 @@ def apply_score(
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Aggregate edit Q1-Q4 evaluation JSON files into per-model CSV files."
+        description="Aggregate editing IF/CC/NERC/PR evaluation JSON files into per-model CSV files."
     )
     parser.add_argument("--metadata", type=Path, default=DEFAULT_METADATA_FILE)
     parser.add_argument(
@@ -249,14 +249,14 @@ def main() -> int:
                 print(f"Skipping {score_name.upper()} for {model_name}; JSON not found: {source_json}")
                 continue
             records = load_json_list(source_json)
-            if score_name == "q1":
-                averages = q1_scores(records, model_name, metadata)
-            elif score_name == "q2":
-                averages = q2_scores(records, metadata)
-            elif score_name == "q3":
-                averages = q3_scores(records, model_name, metadata)
+            if score_name == "if":
+                averages = if_scores(records, model_name, metadata)
+            elif score_name == "cc":
+                averages = cc_scores(records, metadata)
+            elif score_name == "nerc":
+                averages = nerc_scores(records, model_name, metadata)
             else:
-                averages = q4_scores(records, model_name, metadata)
+                averages = pr_scores(records, model_name, metadata)
             apply_score(rows, fieldnames, score_name, averages)
             applied.append(score_name.upper())
 

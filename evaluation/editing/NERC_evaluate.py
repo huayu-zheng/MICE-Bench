@@ -13,7 +13,7 @@ from PIL import Image
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_INPUT_FILE = PROJECT_ROOT / "data" / "edit.json"
 DEFAULT_DATASET_ROOT = PROJECT_ROOT / "data"
-DEFAULT_OUTPUT_DIR = Path(__file__).resolve().parent / "evaluation_results" / "Q3"
+DEFAULT_OUTPUT_DIR = Path(__file__).resolve().parent / "evaluation_results" / "NERC"
 
 
 def resolve_path(
@@ -167,7 +167,7 @@ Output ONLY a valid JSON object with exactly these keys:
                 score = None
         reasoning = result.get("reasoning", "")
         if not isinstance(score, int) or not isinstance(reasoning, str):
-            print(f"Unexpected Q3 output format: {result}", flush=True)
+            print(f"Unexpected NERC output format: {result}", flush=True)
             return None
         return {
             "preservation_score": max(0, min(100, score)),
@@ -291,7 +291,7 @@ def process_dataset(
         return process_single_record(dict(record), scorer, model_name, dataset_root)
 
     for model_name in model_names:
-        output_file = output_dir / f"processed_metadata_with_verifications.Q3_{model_name}.json"
+        output_file = output_dir / f"processed_metadata_with_verifications.NERC_{model_name}.json"
         processed_data = load_existing(output_file)
         processed_ids = {
             item.get("case_id")
@@ -338,7 +338,7 @@ def process_dataset(
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Evaluate non-edited region preservation with a vision API."
+        description="Evaluate non-edited region consistency (NERC) with a vision API."
     )
     parser.add_argument("--input", type=Path, default=DEFAULT_INPUT_FILE)
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)

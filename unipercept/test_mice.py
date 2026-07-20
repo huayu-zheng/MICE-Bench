@@ -1,4 +1,4 @@
-"""Smoke-test the UniPercept deployment used by MICE-Bench creation Q3."""
+"""Smoke-test the UniPercept deployment used by MICE-Bench creation IA."""
 
 import argparse
 import sys
@@ -9,7 +9,7 @@ UNIPERCEPT_ROOT = Path(__file__).resolve().parent
 PROJECT_ROOT = UNIPERCEPT_ROOT.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from evaluation.creation.Q3_evaluate import LocalUniPerceptInferencer  # noqa: E402
+from evaluation.creation.IA_evaluate import LocalUniPerceptInferencer  # noqa: E402
 
 
 def main() -> int:

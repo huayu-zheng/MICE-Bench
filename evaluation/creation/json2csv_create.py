@@ -11,10 +11,10 @@ DEFAULT_EVALUATION_ROOT = Path(__file__).resolve().parent / "evaluation_results"
 DEFAULT_CSV_DIR = Path(__file__).resolve().parent / "benchmark_results"
 
 SCORE_COLUMNS = {
-    "q1": ("PF",),
-    "q2": ("CC",),
-    "q3": ("IA", "IQ", "IS"),
-    "q4": ("PR",),
+    "pf": ("PF",),
+    "cc": ("CC",),
+    "ia": ("IA", "IQ", "IS"),
+    "pr": ("PR",),
 }
 
 HEADER_CANDIDATES = {
@@ -154,7 +154,7 @@ def scalar_scores(
     return average_by_key(values)
 
 
-def q2_scores(
+def cc_scores(
     records: List[Dict[str, Any]],
     metadata: Dict[str, Dict[str, Any]],
     headers: Dict[str, str],
@@ -176,7 +176,7 @@ def q2_scores(
     return average_by_key(values)
 
 
-def q3_scores(
+def ia_scores(
     records: List[Dict[str, Any]],
     metadata: Dict[str, Dict[str, Any]],
     headers: Dict[str, str],
@@ -194,10 +194,10 @@ def q3_scores(
 
 
 def evaluation_path(root: Path, score_name: str, model_name: str) -> Path:
-    if score_name in {"q1", "q4"}:
+    if score_name in {"pf", "pr"}:
         filename = f"processed_metadata_with_verifications.match_{model_name}.json"
     else:
-        filename = f"{model_name}_evaluated.json" if score_name == "q2" else f"{model_name}.json"
+        filename = f"{model_name}_evaluated.json" if score_name == "cc" else f"{model_name}.json"
     return root / score_name.upper() / filename
 
 
@@ -252,7 +252,7 @@ def apply_columns(
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Aggregate create Q1-Q4 evaluation JSON files into per-model CSV files."
+        description="Aggregate creation PF/CC/IA/PR evaluation JSON files into per-model CSV files."
     )
     parser.add_argument("--metadata", type=Path, default=DEFAULT_METADATA_FILE)
     parser.add_argument("--evaluation-root", type=Path, default=DEFAULT_EVALUATION_ROOT)
@@ -306,10 +306,10 @@ def main() -> int:
                 )
                 continue
             records = load_json_list(source_json)
-            if score_name == "q2":
-                column_values = {"CC": q2_scores(records, metadata, headers)}
-            elif score_name == "q3":
-                column_values = q3_scores(records, metadata, headers)
+            if score_name == "cc":
+                column_values = {"CC": cc_scores(records, metadata, headers)}
+            elif score_name == "ia":
+                column_values = ia_scores(records, metadata, headers)
             else:
                 column = SCORE_COLUMNS[score_name][0]
                 column_values = {

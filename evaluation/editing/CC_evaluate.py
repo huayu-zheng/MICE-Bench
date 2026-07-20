@@ -14,9 +14,9 @@ import io
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_METADATA_PATH = PROJECT_ROOT / "data" / "create.json"
-DEFAULT_OUTPUT_DIR = Path(__file__).resolve().parent / "evaluation_results" / "Q2"
-DEFAULT_DATASET_ROOT = PROJECT_ROOT / "data" / "create"
+DEFAULT_METADATA_PATH = PROJECT_ROOT / "data" / "edit.json"
+DEFAULT_OUTPUT_DIR = Path(__file__).resolve().parent / "evaluation_results" / "CC"
+DEFAULT_DATASET_ROOT = PROJECT_ROOT / "data"
 
 
 def encode_image_to_base64(image_path: Path, max_size: int = 1024) -> str:
@@ -201,7 +201,7 @@ def process_task(args_tuple: Tuple) -> Optional[Dict[str, Any]]:
         case_id,
         model_name,
         generated_image_path,
-        verification_questions,
+        cc_prompt,
         source_map,
         api_key,
         base_url,
@@ -227,11 +227,11 @@ def process_task(args_tuple: Tuple) -> Optional[Dict[str, Any]]:
         
         
         evaluations = {}
-        sorted_keys = _sort_image_keys(list(verification_questions.keys()))
+        sorted_keys = _sort_image_keys(list(cc_prompt.keys()))
         
         for q_idx, image_key in enumerate(sorted_keys, 1):
             question_key = f"question_{q_idx}"
-            question = verification_questions[image_key]
+            question = cc_prompt[image_key]
             reference_path = source_map.get(image_key)
             
             if not reference_path or not Path(reference_path).exists():
@@ -275,13 +275,15 @@ def process_task(args_tuple: Tuple) -> Optional[Dict[str, Any]]:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Evaluate generated images and write one JSON file per model.")
+    parser = argparse.ArgumentParser(
+        description="Evaluate editing concept consistency (CC) and write one JSON file per model."
+    )
     parser.add_argument(
         "--metadata-file",
         "--metadata_file",
         type=str,
         default=DEFAULT_METADATA_PATH,
-        help="Path to create.json containing verification_questions and result.",
+        help="Path to edit.json containing CC_prompt and result.",
     )
     parser.add_argument(
         "--output-dir",
@@ -460,9 +462,9 @@ def main() -> int:
             print("[WARN] Skipping record without case_id")
             continue
         
-        verification_questions = record.get("verification_questions", {})
-        if not verification_questions:
-            print(f"[WARN] {case_id}: missing verification_questions; skipped")
+        cc_prompt = record.get("CC_prompt", {})
+        if not cc_prompt:
+            print(f"[WARN] {case_id}: missing CC_prompt; skipped")
             continue
         
         result_map = record.get("result", {})
@@ -492,7 +494,7 @@ def main() -> int:
                 case_id,
                 model_name,
                 str(generated_path),
-                verification_questions,
+                cc_prompt,
                 source_map,
                 args.api_key,
                 args.base_url,

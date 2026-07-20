@@ -1,4 +1,5 @@
 import argparse
+import json
 import os
 import subprocess
 import sys
@@ -11,6 +12,30 @@ PROJECT_ROOT = SCRIPT_DIR.parents[1]
 DEFAULT_INPUT_FILE = PROJECT_ROOT / "data" / "edit.json"
 DEFAULT_DATASET_ROOT = PROJECT_ROOT / "data"
 DEFAULT_OUTPUT_ROOT = SCRIPT_DIR / "evaluation_results"
+
+
+def validate_editing_schema(input_file: Path) -> None:
+    """Validate the flattened IF_prompt/CC_prompt editing metadata contract."""
+    try:
+        records = json.loads(input_file.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise ValueError(f"unable to read editing metadata: {error}") from error
+    if not isinstance(records, list):
+        raise ValueError("editing metadata must be a top-level JSON list")
+    invalid_if = [
+        item.get("case_id", f"index_{index}")
+        for index, item in enumerate(records)
+        if not isinstance(item, dict) or not isinstance(item.get("IF_prompt"), str)
+    ]
+    invalid_cc = [
+        item.get("case_id", f"index_{index}")
+        for index, item in enumerate(records)
+        if not isinstance(item, dict) or not isinstance(item.get("CC_prompt"), dict)
+    ]
+    if invalid_if:
+        raise ValueError(f"missing or invalid IF_prompt: {invalid_if[:10]}")
+    if invalid_cc:
+        raise ValueError(f"missing or invalid CC_prompt: {invalid_cc[:10]}")
 
 
 def run_command(
@@ -26,7 +51,7 @@ def run_command(
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Run edit Q1, Q2, Q3, and Q4 evaluations in one command."
+        description="Run editing IF, CC, NERC, and PR evaluations in one command."
     )
     parser.add_argument("--input", type=Path, default=DEFAULT_INPUT_FILE)
     parser.add_argument("--dataset-root", type=Path, default=DEFAULT_DATASET_ROOT)
@@ -37,23 +62,27 @@ def main() -> int:
     )
     parser.add_argument("--vlm-model", default="gemini-3-pro-preview")
     parser.add_argument("--workers", type=int, default=4)
-    parser.add_argument("--skip-q1", action="store_true")
-    parser.add_argument("--skip-q2", action="store_true")
-    parser.add_argument("--skip-q4", action="store_true")
-    parser.add_argument("--skip-q3", action="store_true")
+    parser.add_argument("--skip-if", action="store_true")
+    parser.add_argument("--skip-cc", action="store_true")
+    parser.add_argument("--skip-nerc", action="store_true")
+    parser.add_argument("--skip-pr", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
     if not args.input.is_file():
         parser.error(f"input JSON not found: {args.input}")
+    try:
+        validate_editing_schema(args.input)
+    except ValueError as error:
+        parser.error(str(error))
     if not args.dataset_root.is_dir():
         parser.error(f"dataset root not found: {args.dataset_root}")
     if not args.dry_run and not args.api_key:
         parser.error("provide --api-key or set OPENAI_API_KEY")
     if args.workers < 1:
         parser.error("--workers must be at least 1")
-    if args.skip_q1 and args.skip_q2 and args.skip_q3 and args.skip_q4:
-        parser.error("all evaluations are skipped")
+    if args.skip_if and args.skip_cc and args.skip_nerc and args.skip_pr:
+        parser.error("all editing evaluations are skipped")
 
     if not args.dry_run:
         args.output_root.mkdir(parents=True, exist_ok=True)
@@ -64,19 +93,19 @@ def main() -> int:
     python = sys.executable
 
     commands = []
-    if not args.skip_q1:
+    if not args.skip_if:
         commands.append(
             (
-                "Q1 prompt-image alignment",
+                "IF instruction following (IF_prompt)",
                 [
                     python,
-                    str(SCRIPT_DIR / "Q1_evaluate.py"),
+                    str(SCRIPT_DIR / "IF_evaluate.py"),
                     "--input",
                     str(args.input),
                     "--dataset-root",
                     str(args.dataset_root),
                     "--output-dir",
-                    str(args.output_root / "Q1"),
+                    str(args.output_root / "IF"),
                     "--model",
                     args.vlm_model,
                     "--workers",
@@ -84,19 +113,19 @@ def main() -> int:
                 ],
             )
         )
-    if not args.skip_q2:
+    if not args.skip_cc:
         commands.append(
             (
-                "Q2 concept preservation",
+                "CC concept consistency (CC_prompt)",
                 [
                     python,
-                    str(SCRIPT_DIR / "Q2_evaluate.py"),
+                    str(SCRIPT_DIR / "CC_evaluate.py"),
                     "--metadata-file",
                     str(args.input),
                     "--dataset-root",
                     str(args.dataset_root),
                     "--output-dir",
-                    str(args.output_root / "Q2"),
+                    str(args.output_root / "CC"),
                     "--vlm-model",
                     args.vlm_model,
                     "--num-workers",
@@ -106,19 +135,19 @@ def main() -> int:
                 ],
             )
         )
-    if not args.skip_q3:
+    if not args.skip_nerc:
         commands.append(
             (
-                "Q3 non-edited region preservation",
+                "NERC non-edited region consistency",
                 [
                     python,
-                    str(SCRIPT_DIR / "Q3_evaluate.py"),
+                    str(SCRIPT_DIR / "NERC_evaluate.py"),
                     "--input",
                     str(args.input),
                     "--dataset-root",
                     str(args.dataset_root),
                     "--output-dir",
-                    str(args.output_root / "Q3"),
+                    str(args.output_root / "NERC"),
                     "--model",
                     args.vlm_model,
                     "--workers",
@@ -126,19 +155,19 @@ def main() -> int:
                 ],
             )
         )
-    if not args.skip_q4:
+    if not args.skip_pr:
         commands.append(
             (
-                "Q4 physical realism",
+                "PR physical realism",
                 [
                     python,
-                    str(SCRIPT_DIR / "Q4_evaluate.py"),
+                    str(SCRIPT_DIR / "PR_evaluate.py"),
                     "--input",
                     str(args.input),
                     "--dataset-root",
                     str(args.dataset_root),
                     "--output-dir",
-                    str(args.output_root / "Q4"),
+                    str(args.output_root / "PR"),
                     "--model",
                     args.vlm_model,
                     "--workers",

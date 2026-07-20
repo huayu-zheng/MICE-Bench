@@ -10,9 +10,9 @@ import concurrent.futures
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_INPUT_FILE = PROJECT_ROOT / "data" / "create.json"
-DEFAULT_DATASET_ROOT = PROJECT_ROOT / "data" / "create"
-DEFAULT_OUTPUT_DIR = Path(__file__).resolve().parent / "evaluation_results" / "Q4"
+DEFAULT_INPUT_FILE = PROJECT_ROOT / "data" / "edit.json"
+DEFAULT_DATASET_ROOT = PROJECT_ROOT / "data"
+DEFAULT_OUTPUT_DIR = Path(__file__).resolve().parent / "evaluation_results" / "PR"
 
 
 def encode_image(image_path: Union[str, Path], max_size: int = 1024) -> str:
@@ -287,7 +287,7 @@ def process_mige_dataset_for_verification_multi(
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Evaluate physical realism (Q4).")
+    parser = argparse.ArgumentParser(description="Evaluate physical realism (PR).")
     parser.add_argument("--input", type=Path, default=DEFAULT_INPUT_FILE)
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
     parser.add_argument("--dataset-root", type=Path, default=DEFAULT_DATASET_ROOT)

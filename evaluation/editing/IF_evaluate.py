@@ -12,7 +12,7 @@ import concurrent.futures
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_INPUT_FILE = PROJECT_ROOT / "data" / "edit.json"
 DEFAULT_DATASET_ROOT = PROJECT_ROOT / "data"
-DEFAULT_OUTPUT_DIR = Path(__file__).resolve().parent / "evaluation_results" / "Q1"
+DEFAULT_OUTPUT_DIR = Path(__file__).resolve().parent / "evaluation_results" / "IF"
 
 
 def encode_image(image_path: Union[str, Path], max_size: int = 1024) -> str:
@@ -161,11 +161,10 @@ def process_single_record(
     case_id = record.get("case_id", "")
     print(f"Processing case: {case_id}")
        
-    caption_result = record.get("caption_result", {})
-    detailed_description = caption_result.get("converted_prompt", "")
+    detailed_description = record.get("IF_prompt", "")
     
     if not detailed_description:
-        print(f"Case {case_id} has no detailed description")
+        print(f"Case {case_id} has no IF_prompt")
         return record
     
     if "evaluations" not in record:
@@ -308,7 +307,7 @@ def process_mige_dataset_for_evaluation(
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Evaluate prompt-image alignment (Q1).")
+    parser = argparse.ArgumentParser(description="Evaluate instruction following (IF).")
     parser.add_argument("--input", type=Path, default=DEFAULT_INPUT_FILE)
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
     parser.add_argument("--dataset-root", type=Path, default=DEFAULT_DATASET_ROOT)
